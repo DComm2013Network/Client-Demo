@@ -9,24 +9,26 @@ typedef struct Position{
 	int y;
 }Position;
 
-Position read_UDP();
+void read_UDP(Position *pXY);
 void send_UDP(Position *pXY);
 
 int main(void){
-	Position pXY = {1, 1, 1};
-	send_UDP(&pXY);
-	pXY = {1, 2, 2};
-	pXY = read_UDP();
+	Position * pXY = (Position*) malloc(sizeof(Position));
+	pXY->player = 0;
+	pXY->x = 1;
+	pXY->y = 1;
+	send_UDP(pXY);
+	pXY->player = 32;
+	read_UDP(pXY);
 
-	printf("Player: %d, X: %d, Y: %d", pXY.player, pXY.x, pXY.y);
+	printf("Player: %d, X: %d, Y: %d", pXY->player, pXY->x, pXY->y);
 }
 
-Position read_UDP(){
+void read_UDP(Position * pXY){
 	UDPsocket sd;       /* Socket descriptor */
 	UDPpacket *p;       /* Pointer to packet memory */
 	int quit = 0;
-	Position pXY;
-
+	
 	if (SDLNet_Init() < 0) 
 	{
 		fprintf(stderr, "SDLNet_Init: %s\n", SDLNet_GetError());
@@ -51,14 +53,12 @@ Position read_UDP(){
 	{
 		/* Wait a packet. UDP_Recv returns != 0 if a packet is coming */
 		if (SDLNet_UDP_Recv(sd, p)) 
-			pXY = (Position)p->data;	// casting issues damnit		
+			pXY = (Position*)p->data;	// casting issues damnit		
 	}
  	
 	/* Clean and exit */
 	SDLNet_FreePacket(p);
 	SDLNet_Quit();
-	
-	return pXY;
 }
 
 void send_UDP(Position *pXY){
@@ -67,7 +67,7 @@ void send_UDP(Position *pXY){
 	IPaddress srvadd;
 	UDPpacket *p;
 	int quit = 0;
- 
+ 	
 	/* Initialize SDL_net */
 	if (SDLNet_Init() < 0)
 	{
@@ -102,13 +102,11 @@ void send_UDP(Position *pXY){
 		p->address.host = srvadd.host;	/* Set the destination host */
 		p->address.port = srvadd.port;	/* And destination port */
 		p->len = sizeof(Position);
-		p->data = pXY; //casting issues.. still figuring it out
+		p->data = (Uint8*)pXY; //casting issues.. still figuring it out
 
 		SDLNet_UDP_Send(sd, -1, p); /* This sets the p->channel */
 	}
  
 	SDLNet_FreePacket(p);
 	SDLNet_Quit();
- 
-	return EXIT_SUCCESS;
 }
